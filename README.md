@@ -2,5 +2,6 @@ fully vibecoded
 
 db - sqlite
 
-docker compose build
-docker compose up -d
+setup
+`docker compose build`
+`docker compose up -d`
