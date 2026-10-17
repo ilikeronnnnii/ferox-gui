@@ -1,0 +1,20 @@
+services:
+  ferox-gui:
+    build:
+      context: .
+      args:
+        FEROX_VERSION: "2.13.1"
+    image: ferox-gui:latest
+    container_name: ferox-gui
+    ports:
+      - "8000:8000"
+    volumes:
+      # sqlite database + uploaded wordlists survive container restarts
+      - ./data:/app/data
+    restart: unless-stopped
+    # feroxbuster can be aggressive; keep container resource use sane
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+          cpus: "2.0"

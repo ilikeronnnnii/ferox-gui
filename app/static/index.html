@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FEROX//GUI</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <div class="brand">FEROX<span>//</span>GUI</div>
+  <nav id="tabs">
+    <button data-view="live" class="tab active">LIVE</button>
+    <button data-view="results" class="tab">RESULTS</button>
+    <button data-view="anomalies" class="tab">ANOMALIES</button>
+    <button data-view="history" class="tab">HISTORY</button>
+    <button data-view="wordlists" class="tab">WORDLISTS</button>
+    <button data-view="settings" class="tab">SCAN</button>
+  </nav>
+  <div class="head-right">
+    <span id="scan-pill" class="pill">IDLE</span>
+    <button id="stop-btn" class="btn ghost" disabled>STOP</button>
+  </div>
+</header>
+
+<!-- ============================== LIVE ============================== -->
+<section id="view-live" class="view active">
+  <div class="toolbar">
+    <span class="stat">TARGET <b id="live-target">—</b></span>
+    <span class="stat">RESULTS <b id="live-count">0</b></span>
+    <span class="stat">RATE <b id="live-rate">0/s</b></span>
+    <span class="stat">ELAPSED <b id="live-elapsed">0s</b></span>
+    <label class="stat"><input type="checkbox" id="live-pin" checked> PIN</label>
+  </div>
+  <div id="live-feed" class="feed"></div>
+</section>
+
+<!-- ============================== RESULTS ============================== -->
+<section id="view-results" class="view">
+  <div class="toolbar">
+    <div class="chips" id="status-chips">
+      <button class="chip active" data-status="all">ALL</button>
+      <button class="chip" data-status="2">2XX</button>
+      <button class="chip" data-status="3">3XX</button>
+      <button class="chip" data-status="4">4XX</button>
+      <button class="chip" data-status="5">5XX</button>
+    </div>
+    <input id="search" class="input" type="search" placeholder="filter path / url…" autocomplete="off">
+    <label class="stat"><input type="checkbox" id="anomaly-only"> ANOMALIES ONLY</label>
+    <button id="refresh-btn" class="btn ghost">RE-QUERY</button>
+    <button id="copy-all-btn" class="btn ghost">COPY URLS</button>
+    <span class="stat muted">shown <b id="res-count">0</b></span>
+  </div>
+  <div id="pending-chip" class="pending hidden">0 NEW — PULL ▼</div>
+  <div class="table-wrap">
+    <table class="grid" id="res-table">
+      <thead>
+        <tr>
+          <th data-sort="status" class="sortable">STATUS</th>
+          <th data-sort="size" class="sortable">SIZE</th>
+          <th data-sort="words" class="sortable">WORDS</th>
+          <th data-sort="lines" class="sortable">LINES</th>
+          <th data-sort="url" class="sortable">URL</th>
+          <th data-sort="score" class="sortable">SCORE</th>
+          <th>FLAGS</th>
+        </tr>
+      </thead>
+    </table>
+    <div id="res-scroll" class="virtual-scroll">
+      <div id="res-spacer" class="virtual-spacer"></div>
+      <div id="res-rows" class="virtual-rows"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== ANOMALIES ============================== -->
+<section id="view-anomalies" class="view">
+  <div class="toolbar">
+    <span class="stat">FLAGGED <b id="anom-count">0</b></span>
+    <button id="reanalyze-btn" class="btn">RE-ANALYZE (MAD)</button>
+    <span class="muted small">streaming score is live; MAD pass is exact over the full set</span>
+  </div>
+  <div class="table-wrap">
+    <table class="grid">
+      <thead>
+        <tr><th>SCORE</th><th>STATUS</th><th>SIZE</th><th>URL</th><th>WHY</th></tr>
+      </thead>
+    </table>
+    <div id="anom-rows" class="static-rows"></div>
+  </div>
+</section>
+
+<!-- ============================== HISTORY ============================== -->
+<section id="view-history" class="view">
+  <div class="toolbar"><span class="stat">PAST SCANS <b id="hist-count">0</b></span></div>
+  <div class="table-wrap">
+    <table class="grid">
+      <thead>
+        <tr><th>ID</th><th>TARGET</th><th>WORDLIST</th><th>STATUS</th><th>ROWS</th><th>WHEN</th><th></th></tr>
+      </thead>
+    </table>
+    <div id="hist-rows" class="static-rows"></div>
+  </div>
+</section>
+
+<!-- ============================== WORDLISTS ============================== -->
+<section id="view-wordlists" class="view">
+  <div class="toolbar">
+    <label class="btn">
+      UPLOAD WORDLIST<input type="file" id="wl-file" hidden>
+    </label>
+    <span class="muted small">or drop a .txt anywhere on this panel — bundled + uploaded lists are available to scans</span>
+  </div>
+  <div class="table-wrap" id="wl-drop">
+    <table class="grid">
+      <thead><tr><th>NAME</th><th>KIND</th><th>WORDS</th><th></th></tr></thead>
+    </table>
+    <div id="wl-rows" class="static-rows"></div>
+  </div>
+</section>
+
+<!-- ============================== SCAN SETTINGS ============================== -->
+<section id="view-settings" class="view">
+  <form id="scan-form" class="form">
+    <div class="row">
+      <label>TARGET URL<input id="f-target" class="input" type="text" placeholder="http://127.0.0.1:8080" required></label>
+      <label>WORDLIST<select id="f-wordlist" class="input"></select></label>
+    </div>
+    <div class="row">
+      <label>THREADS<input id="f-threads" class="input" type="number" value="50" min="1" max="500"></label>
+      <label>DEPTH<input id="f-depth" class="input" type="number" value="2" min="0" max="20"></label>
+      <label>TIMEOUT (S)<input id="f-timeout" class="input" type="number" value="7" min="1" max="120"></label>
+      <label>RATE LIMIT (0=∞)<input id="f-rate" class="input" type="number" value="0" min="0" max="10000"></label>
+    </div>
+    <div class="row">
+      <label>EXTENSIONS<input id="f-ext" class="input" type="text" placeholder="php,js,txt"></label>
+      <label>METHODS<input id="f-methods" class="input" type="text" placeholder="GET,POST"></label>
+      <label>EXTRA ARGS<input id="f-extra" class="input" type="text" placeholder="-H 'X-Api-Key: 123' --burp"></label>
+    </div>
+    <div class="row checks">
+      <label><input type="checkbox" id="f-insecure"> INSECURE TLS</label>
+      <label><input type="checkbox" id="f-redirects"> FOLLOW REDIRECTS</label>
+      <label><input type="checkbox" id="f-slash"> ADD SLASH</label>
+      <label><input type="checkbox" id="f-norec"> NO RECURSION</label>
+    </div>
+    <div class="row">
+      <button type="submit" class="btn primary">▶ START SCAN</button>
+      <span id="form-msg" class="muted"></span>
+    </div>
+  </form>
+  <pre id="argv-preview" class="argv"></pre>
+</section>
+
+<footer>
+  <span class="muted small">output: feroxbuster --silent --json · storage: sqlite · live feed: SSE (batched)</span>
+</footer>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
